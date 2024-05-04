@@ -35,6 +35,16 @@ pub struct UserForCreate {
     pub role: Role,
     pub password: String,
 }
+impl From<UserForCreate> for User {
+    fn from(u: UserForCreate) -> Self {
+        User {
+            id: u.id,
+            name: u.name,
+            role: u.role,
+            password: u.password,
+        }
+    }
+}
 
 #[derive(Deserialize)]
 pub struct UserForLogin {

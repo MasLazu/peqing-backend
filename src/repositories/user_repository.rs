@@ -33,7 +33,7 @@ impl UserRepository {
         Ok(users)
     }
 
-    pub async fn create_user(&self, user: User) -> Result<User> {
+    pub async fn insert_user(&self, user: User) -> Result<User> {
         let user = sqlx::query_as!(
             User,
             r#"INSERT INTO users (id, name, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, role, password"#,
@@ -61,5 +61,13 @@ impl UserRepository {
         .await?;
 
         Ok(user)
+    }
+
+    pub async fn delete_user(&self, id: &str) -> Result<()> {
+        sqlx::query!(r#"DELETE FROM users WHERE id = $1"#, id)
+            .execute(&self.conn)
+            .await?;
+
+        Ok(())
     }
 }
