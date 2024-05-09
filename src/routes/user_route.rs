@@ -36,8 +36,11 @@ async fn get_user_by_id(State(db): State<PgPool>, Path(id): Path<String>) -> Res
 
 async fn create_user(
     State(db): State<PgPool>,
-    Json(payload): Json<UserForCreate>,
+    Json(mut payload): Json<UserForCreate>,
 ) -> Result<Json<Value>> {
+    payload.password =
+        hash(payload.password, DEFAULT_COST).map_err(|_| Error::InternalServerError)?;
+
     let user = user_repository::insert_user(&db, payload.into())
         .await
         .map_err(|_| Error::DatabaseError)?;
