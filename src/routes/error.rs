@@ -15,6 +15,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     DatabaseError,
+    CredentialNotMatch,
+    InternalServerError,
 }
 
 impl IntoResponse for Error {
@@ -26,6 +28,10 @@ impl IntoResponse for Error {
 
         if let Some(map) = body.as_object_mut() {
             match self {
+                Error::CredentialNotMatch => {
+                    map.insert("message".to_string(), json!("Credential not match"));
+                    map.insert("code".to_string(), json!(StatusCode::UNAUTHORIZED.as_u16()));
+                }
                 _ => {
                     map.insert("message".to_string(), json!("Internal Server Error"));
                     map.insert(

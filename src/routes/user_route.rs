@@ -4,6 +4,7 @@ use crate::repositories::user_repository;
 use crate::routes::error::{Error, Result};
 use axum::extract::{Path, State};
 use axum::{routing::get, Json, Router};
+use bcrypt::{hash, DEFAULT_COST};
 use serde_json::{json, Value};
 use sqlx::PgPool;
 
@@ -46,8 +47,11 @@ async fn create_user(
 
 async fn update_user(
     State(db): State<PgPool>,
-    Json(payload): Json<UserForCreate>,
+    Json(mut payload): Json<UserForCreate>,
 ) -> Result<Json<Value>> {
+    payload.password =
+        hash(payload.password, DEFAULT_COST).map_err(|_| Error::InternalServerError)?;
+
     let user = user_repository::update_user(&db, payload.into())
         .await
         .map_err(|_| Error::DatabaseError)?;
