@@ -1,5 +1,4 @@
 use axum::Router;
-use repositories::user_repository::UserRepository;
 use sqlx::{migrate::MigrateDatabase, postgres::PgPoolOptions, postgres::Postgres, Error, PgPool};
 use tokio::net::TcpListener;
 
@@ -13,9 +12,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 async fn main() -> Result<()> {
     let pool = get_db_pool().await.unwrap();
 
-    let user_repository = UserRepository::new(pool);
-
-    let routes = Router::new().merge(routes::user_route::routes(user_repository));
+    let routes = Router::new().merge(routes::user_route::routes(pool));
 
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
     println!("->> LISTENING on {:?}\n", listener.local_addr());
