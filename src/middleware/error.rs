@@ -8,7 +8,9 @@ use serde::Serialize;
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Serialize, From, Clone)]
-pub enum Error {}
+pub enum Error {
+    Unauthorized,
+}
 
 //masih belum selesai (place holder)
 impl IntoResponse for Error {

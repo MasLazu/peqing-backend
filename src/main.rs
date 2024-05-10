@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
         .merge(auth_route::routes(pool.clone()))
         .layer(axum::middleware::from_fn_with_state(
             pool.clone(),
-            middleware::auth_resolver::auth_resolver,
+            middleware::auth_middleware::auth_resolver,
         ));
 
     let listener = TcpListener::bind("127.0.0.1:8080").await.unwrap();
