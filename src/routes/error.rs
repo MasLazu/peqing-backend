@@ -1,11 +1,11 @@
+use std::sync::Arc;
+
 use axum::{
-    body::Body,
-    http::{Response, StatusCode},
-    response::IntoResponse,
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
 use derive_more::From;
 use serde::Serialize;
-use serde_json::json;
 use serde_with::serde_as;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -16,36 +16,37 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     DatabaseError,
     CredentialNotMatch,
-    InternalServerError,
+    IdAlreadyUsed,
+    HashFail,
+    NotFound,
+    Unauthenticated,
+    Unauthorized,
+}
+
+impl Error {
+    pub fn to_client(&self) -> (StatusCode, &str) {
+        match self {
+            Error::DatabaseError | Error::HashFail => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error")
+            }
+            Error::NotFound => (StatusCode::NOT_FOUND, "Not found"),
+            Error::CredentialNotMatch => (StatusCode::UNAUTHORIZED, "Credential not match"),
+            Error::IdAlreadyUsed => (StatusCode::BAD_REQUEST, "Id already exist"),
+            Error::Unauthorized | Error::Unauthenticated => {
+                (StatusCode::UNAUTHORIZED, "Unauthorized")
+            }
+        }
+    }
 }
 
 impl IntoResponse for Error {
-    fn into_response(self) -> Response<Body> {
-        println!("->> {:<12} - {self:?}", "INTO_RES");
-        let mut body = json!({
-            "status": "error",
-        });
+    fn into_response(self) -> Response {
+        // Create a placeholder Axum reponse.
+        let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 
-        if let Some(map) = body.as_object_mut() {
-            match self {
-                Error::CredentialNotMatch => {
-                    map.insert("message".to_string(), json!("Credential not match"));
-                    map.insert("code".to_string(), json!(StatusCode::UNAUTHORIZED.as_u16()));
-                }
-                _ => {
-                    map.insert("message".to_string(), json!("Internal Server Error"));
-                    map.insert(
-                        "code".to_string(),
-                        json!(StatusCode::INTERNAL_SERVER_ERROR.as_u16()),
-                    );
-                }
-            }
-        }
+        // Insert the Error into the reponse.
+        response.extensions_mut().insert(Arc::new(self));
 
-        Response::builder()
-            .status(body["code"].as_u64().unwrap() as u16)
-            .header("Content-Type", "application/json")
-            .body(Body::from(serde_json::to_vec(&body).unwrap()))
-            .unwrap()
+        response
     }
 }

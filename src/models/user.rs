@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-#[derive(Clone, Debug, sqlx::Type, derive_more::Display, Deserialize, Serialize)]
+#[derive(Clone, Debug, sqlx::Type, derive_more::Display, Deserialize, Serialize, PartialEq)]
 #[sqlx(type_name = "role")]
 pub enum Role {
     Admin,

@@ -1,3 +1,4 @@
+use crate::ctx::Ctx;
 use crate::repositories::user_repository;
 use crate::routes::error::Error;
 use crate::{models::user::UserForLogin, routes::error::Result};
@@ -18,7 +19,13 @@ pub fn routes(db: PgPool) -> Router {
         .with_state(db)
 }
 
-async fn login(State(db): State<PgPool>, Json(payload): Json<UserForLogin>) -> Result<Json<Value>> {
+async fn login(
+    mut ctx: Ctx,
+    State(db): State<PgPool>,
+    Json(payload): Json<UserForLogin>,
+) -> Result<Json<Value>> {
+    ctx.push_trace(" -> login").await;
+
     let user = user_repository::get_user_by_id(&db, &payload.id)
         .await
         .map_err(|_| Error::CredentialNotMatch)?;

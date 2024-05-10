@@ -1,7 +1,6 @@
-use sqlx::PgPool;
-
+use super::error::{Error, Result};
 use crate::models::user::User;
-use crate::repositories::error::Result;
+use sqlx::PgPool;
 
 pub async fn get_user_by_id(db: &PgPool, id: &str) -> Result<User> {
     let user = sqlx::query_as!(
@@ -10,17 +9,28 @@ pub async fn get_user_by_id(db: &PgPool, id: &str) -> Result<User> {
         id
     )
     .fetch_one(db)
-    .await?;
+    .await;
 
-    Ok(user)
+    match user {
+        Ok(u) => Ok(u),
+        Err(sqlx::Error::RowNotFound) => Err(Error::RowNotFound),
+        Err(_) => Err(Error::DatabaseError),
+    }
 }
 
 pub async fn get_all_users(db: &PgPool) -> Result<Vec<User>> {
     let users = sqlx::query_as!(User, "SELECT id, name, role, password FROM users")
         .fetch_all(db)
-        .await?;
+        .await;
 
-    Ok(users)
+    match users {
+        Ok(u) => Ok(u),
+        Err(sqlx::Error::RowNotFound) => {
+            let u: Vec<User> = Vec::new();
+            Ok(u)
+        }
+        Err(_) => Err(Error::DatabaseError),
+    }
 }
 
 pub async fn insert_user(db: &PgPool, user: User) -> Result<User> {
@@ -33,9 +43,19 @@ pub async fn insert_user(db: &PgPool, user: User) -> Result<User> {
             user.password
         )
         .fetch_one(db)
-        .await?;
+        .await;
 
-    Ok(user)
+    match user {
+        Ok(u) => Ok(u),
+        Err(sqlx::Error::Database(e)) => {
+            if e.is_check_violation() {
+                Err(Error::UniqueConstraintViolation)
+            } else {
+                Err(Error::DatabaseError)
+            }
+        }
+        Err(_) => Err(Error::DatabaseError),
+    }
 }
 
 pub async fn update_user(db: &PgPool, user: User) -> Result<User> {
@@ -48,15 +68,26 @@ pub async fn update_user(db: &PgPool, user: User) -> Result<User> {
             user.password
         )
         .fetch_one(db)
-        .await?;
+        .await;
 
-    Ok(user)
+    match user {
+        Ok(u) => Ok(u),
+        Err(sqlx::Error::Database(e)) => {
+            if e.is_check_violation() {
+                Err(Error::UniqueConstraintViolation)
+            } else {
+                Err(Error::DatabaseError)
+            }
+        }
+        Err(_) => Err(Error::DatabaseError),
+    }
 }
 
 pub async fn delete_user(db: &PgPool, id: &str) -> Result<()> {
     sqlx::query!("DELETE FROM users WHERE id = $1", id)
         .execute(db)
-        .await?;
+        .await
+        .map_err(|_| Error::DatabaseError)?;
 
     Ok(())
 }
