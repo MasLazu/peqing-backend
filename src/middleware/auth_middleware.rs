@@ -25,8 +25,8 @@ pub async fn auth_resolver(
     let auth_header = req.headers().get(header::AUTHORIZATION);
 
     let token_str = auth_header
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.strip_prefix("Bearer "))
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
         .unwrap_or_default();
 
     let key: Hmac<Sha384> = Hmac::new_from_slice(b"sangat rahasia").unwrap();
@@ -36,9 +36,11 @@ pub async fn auth_resolver(
 
     if let Ok(token) = token {
         let claims = token.claims();
-        let user_id = claims.get("sub").unwrap();
+        let user_id = claims.get("sub").cloned().unwrap_or_default();
 
-        ctx.user = user_repository::get_user_by_id(&db, user_id).await.ok();
+        ctx.user = user_repository::get_user_by_id(&db, user_id.as_str())
+            .await
+            .ok();
     }
 
     req.extensions_mut().insert(ctx);
@@ -56,6 +58,9 @@ pub async fn authenticated_only(mut ctx: Ctx, req: Request<Body>, next: Next) ->
 
 pub async fn admin_only(mut ctx: Ctx, req: Request<Body>, next: Next) -> Result<Response> {
     ctx.push_trace(" -> admin_only").await;
+    if let Some(user) = ctx.user.clone() {
+        print!("{:?}", user);
+    }
     match ctx.user {
         Some(user) => match user.role {
             Role::Admin => Ok(next.run(req).await),

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET name = $2, role = $3, password = $4 WHERE id = $1 RETURNING id, name, role, password",
+  "query": "\n        SELECT id, name, role, qr_link, password, created_at, updated_at\n        FROM users \n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -20,24 +20,39 @@
       },
       {
         "ordinal": 3,
+        "name": "qr_link",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "password",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamp"
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Varchar",
-        "Varchar",
-        "Varchar"
+        "Text"
       ]
     },
     "nullable": [
       false,
       false,
       false,
+      false,
+      false,
+      false,
       false
     ]
   },
-  "hash": "306ae54aad313ab34397af660f46668b942f6c9d8d9a4238b6ec3336c85aced7"
+  "hash": "e555f796d797256b78a78a5de7bbb32ae82dd4a8ea00c215e159f166023abaa4"
 }

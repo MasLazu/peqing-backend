@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -24,8 +25,11 @@ pub struct User {
     pub id: String,
     pub name: String,
     pub role: Role,
+    pub qr_link: String,
     #[serde(skip_serializing)]
     pub password: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Deserialize, Debug)]
@@ -42,6 +46,9 @@ impl From<UserForCreate> for User {
             name: u.name,
             role: u.role,
             password: u.password,
+            qr_link: "".to_string(),
+            created_at: chrono::Utc::now().naive_utc(),
+            updated_at: chrono::Utc::now().naive_utc(),
         }
     }
 }

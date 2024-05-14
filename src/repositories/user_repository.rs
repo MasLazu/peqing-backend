@@ -5,7 +5,11 @@ use sqlx::PgPool;
 pub async fn get_user_by_id(db: &PgPool, id: &str) -> Result<User> {
     let user = sqlx::query_as!(
         User,
-        "SELECT id, name, role, password FROM users WHERE id = $1",
+        r#"
+        SELECT id, name, role, qr_link, password, created_at, updated_at
+        FROM users 
+        WHERE id = $1
+        "#,
         id
     )
     .fetch_one(db)
@@ -19,9 +23,15 @@ pub async fn get_user_by_id(db: &PgPool, id: &str) -> Result<User> {
 }
 
 pub async fn get_all_users(db: &PgPool) -> Result<Vec<User>> {
-    let users = sqlx::query_as!(User, "SELECT id, name, role, password FROM users")
-        .fetch_all(db)
-        .await;
+    let users = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, name, role, qr_link, password, created_at, updated_at 
+        FROM users
+        "#
+    )
+    .fetch_all(db)
+    .await;
 
     match users {
         Ok(u) => Ok(u),
@@ -33,17 +43,22 @@ pub async fn get_all_users(db: &PgPool) -> Result<Vec<User>> {
     }
 }
 
-pub async fn insert_user(db: &PgPool, user: User) -> Result<User> {
+pub async fn insert_user(db: &PgPool, u: User) -> Result<User> {
     let user = sqlx::query_as!(
-            User,
-            "INSERT INTO users (id, name, role, password) VALUES ($1, $2, $3, $4) RETURNING id, name, role, password",
-            user.id,
-            user.name,
-            user.role.to_string(),
-            user.password
-        )
-        .fetch_one(db)
-        .await;
+        User,
+        r#"
+        INSERT INTO users (id, name, role, password, qr_link) 
+        VALUES ($1, $2, $3, $4, $5) 
+        RETURNING id, name, role, qr_link, password, created_at, updated_at
+        "#,
+        u.id,
+        u.name,
+        u.role.to_string(),
+        u.password,
+        u.qr_link
+    )
+    .fetch_one(db)
+    .await;
 
     match user {
         Ok(u) => Ok(u),
@@ -58,17 +73,22 @@ pub async fn insert_user(db: &PgPool, user: User) -> Result<User> {
     }
 }
 
-pub async fn update_user(db: &PgPool, user: User) -> Result<User> {
+pub async fn update_user(db: &PgPool, u: User) -> Result<User> {
     let user = sqlx::query_as!(
-            User,
-            "UPDATE users SET name = $2, role = $3, password = $4 WHERE id = $1 RETURNING id, name, role, password",
-            user.id,
-            user.name,
-            user.role.to_string(),
-            user.password
-        )
-        .fetch_one(db)
-        .await;
+        User,
+        r#"
+            UPDATE users 
+            SET name = $2, role = $3, password = $4, updated_at = NOW() 
+            WHERE id = $1 
+            RETURNING id, name, role, qr_link, password, created_at, updated_at
+            "#,
+        u.id,
+        u.name,
+        u.role.to_string(),
+        u.password
+    )
+    .fetch_one(db)
+    .await;
 
     match user {
         Ok(u) => Ok(u),
